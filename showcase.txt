@@ -1,0 +1,56 @@
+Read Line:
+	(*Xabcd)["abcd"] <<= (1.0) * (*Vpppp)["abcd"],
+
+Translated Code:
+	X_pppp = mea.copy(V_oioi)
+	
+	# Adding thermal weights
+	X_pppp = mea.contract(acbd,a->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,c->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,b->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,d->acbd, X_pppp, n_p)
+	
+
+Read Line:
+	(*Xabcd)["abcd"] += (-1.0) * (*Vphpp)["akcd"] * (*Tph)["bk"],
+
+Translated Code:
+	mea.add_to(X_pppp, mea.contract(ackd,bk->acbd, V_oioi, T_ph))
+	
+	# Adding thermal weights
+	X_pppp = mea.contract(acbd,a->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,c->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,d->acbd, X_pppp, n_p)
+	
+	mea.mul_by(X_pppp, mea.from_numpy(-1.0))
+
+Read Line:
+	(*Xabcd)["abcd"] += (-1.0) * (*Vhppp)["kbcd"] * (*Tph)["ak"],
+
+Translated Code:
+	mea.add_to(X_pppp, mea.contract(kcbd,ak->acbd, V_oioi, T_ph))
+	
+	# Adding thermal weights
+	X_pppp = mea.contract(acbd,c->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,b->acbd, X_pppp, n_p)
+	X_pppp = mea.contract(acbd,d->acbd, X_pppp, n_p)
+	
+	mea.mul_by(X_pppp, mea.from_numpy(-1.0))
+
+Read Line:
+	(*Rpphh)["abij"] <<= (*Xabcd)["abcd"] * (*Tpphh)["cdij"],
+
+Translated Code:
+	R_phph = mea.contract(acbd,cidj->aibj, X_pppp, T_phph)
+	
+
+Read Line:
+	(*Rpphh)["abij"]  += (*Xabcd)["abcd"] * (*Tph)["ci"] * (*Tph)["dj"]
+
+Translated Code:
+	TEMP = mea.contract("acbd,ci->abdi", X_pppp, T_ph)
+	TEMP = mea.contract("abdi,dj->aibj", TEMP, T_ph)
+	
+	
+	mea.add_to(R_phph, TEMP)
+
