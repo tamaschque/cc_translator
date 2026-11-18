@@ -11,6 +11,8 @@
     Because especially if we have 3 or more contractions I guess we're gonna need some temporary variables to store the intermediates? So for this case I currently do:
     ```
     TEMP = mea.contract(...)
+    TEMP = mea.contract(...)
+
     mea.add_to(Tensor, TEMP)
     ```
 

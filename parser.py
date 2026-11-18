@@ -50,7 +50,8 @@ class Parser:
         self.destination = self.factors.pop(0)
 
         # Add occupancy/vacancy factors
-        # Identify relevant indices
+        # FIXME: Outer Indices != All indices in destination?
+
         self.weights = []
         for i in self.destination.idx:
             for tensor in self.factors:
