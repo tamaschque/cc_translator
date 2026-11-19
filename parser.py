@@ -53,7 +53,8 @@ class Parser:
         # FIXME: Outer Indices != All indices in destination?
 
         self.weights = []
-        for i in self.destination.idx:
+        outer_idx = [self.destination.idx[0], self.destination.idx[-1]]
+        for i in outer_idx:
             for tensor in self.factors:
 
                 if i in tensor.idx and tensor.name.startswith('V'):
@@ -174,7 +175,6 @@ class Parser:
         self.output.append(f'')
 
 if __name__ == "__main__":
-
 
     with open("showcase.txt", "w") as file:
 

@@ -6,8 +6,6 @@ Translated Code:
 	
 	# Adding thermal weights
 	X_pppp = mea.contract(acbd,a->acbd, X_pppp, n_p)
-	X_pppp = mea.contract(acbd,c->acbd, X_pppp, n_p)
-	X_pppp = mea.contract(acbd,b->acbd, X_pppp, n_p)
 	X_pppp = mea.contract(acbd,d->acbd, X_pppp, n_p)
 	
 
@@ -19,7 +17,6 @@ Translated Code:
 	
 	# Adding thermal weights
 	X_pppp = mea.contract(acbd,a->acbd, X_pppp, n_p)
-	X_pppp = mea.contract(acbd,c->acbd, X_pppp, n_p)
 	X_pppp = mea.contract(acbd,d->acbd, X_pppp, n_p)
 	
 	mea.mul_by(X_pppp, mea.from_numpy(-1.0))
@@ -31,8 +28,6 @@ Translated Code:
 	mea.add_to(X_pppp, mea.contract(kcbd,ak->acbd, V_oioi, T_ph))
 	
 	# Adding thermal weights
-	X_pppp = mea.contract(acbd,c->acbd, X_pppp, n_p)
-	X_pppp = mea.contract(acbd,b->acbd, X_pppp, n_p)
 	X_pppp = mea.contract(acbd,d->acbd, X_pppp, n_p)
 	
 	mea.mul_by(X_pppp, mea.from_numpy(-1.0))
