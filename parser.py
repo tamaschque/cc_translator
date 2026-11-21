@@ -1,3 +1,5 @@
+import itertools
+import numpy as np
 
 from helpers import *
 from lexer import get_tokens
@@ -50,11 +52,10 @@ class Parser:
         self.destination = self.factors.pop(0)
 
         # Add occupancy/vacancy factors
-        # FIXME: Outer Indices != All indices in destination?
 
         self.weights = []
-        outer_idx = [self.destination.idx[0], self.destination.idx[-1]]
-        for i in outer_idx:
+        # With outer indices we mean all destination indices
+        for i in self.destination.idx:
             for tensor in self.factors:
 
                 if i in tensor.idx and tensor.name.startswith('V'):
@@ -65,14 +66,14 @@ class Parser:
                     )
                     self.weights.append(occ_tensor)
 
-        self.order_contractions()   # TODO
+        self.order_contractions()
 
     def parse_tokens(self):
         self.pre_parse()
 
-        # print(f"{self.factors=}")
-        # print(f"{self.weights=}")
-
+        print(f"{self.destination=}")
+        print(f"{self.factors=}")
+        print(f"{self.weights=}")
 
         dst = self.destination
         if len(self.factors) == 1:
@@ -151,14 +152,75 @@ class Parser:
 
     def order_contractions(self):
         """
-        Determine the best ordering of contractions, prefering more reducing ones.
-        
-        In general a contractions of a N indices requires:
-            
+        Determine the best ordering of contractions, prefering more reducing ones. So avoid unnecessairy blowups like:
+            ki <- ( ci * dl ) * klcd
+        Instead try to reorder it to:
+            ki <- ( klcd * ci ) * dl
+        Or even better try to reduce it early to
+            ki <- ( klcd * dl ) * ci
 
+        Since we don't expect more than 4 factors in a given line we can just check all N! combintation of a contraction of N tensors
+
+        We avoid expansions and incentivise early reductions by punishing non-reducing steps by the current index amount. This way reducing it early nets a lower score.        
         """
-        # TODO
-        
+
+        # For 2 factors there is nothing to optimize
+        if len(self.factors) == 2:
+            return
+
+        # Just try every permutation and see which one is the most reducing
+        # Complexity is N! (But so far I've only seen products of at max 4 tensors so 4! = 24 is more than bareble)
+
+        permutations = list(itertools.permutations(range(len(self.factors))))
+
+
+        def get_storage_need(permutation):
+            factors = permute(self.factors, permutation)
+
+            x = 0
+            tl = factors[0]
+
+            # print(f"P: {permutation}: {factors=}")
+            for i in range(1,len(factors)):
+                
+                tr = factors[i]
+
+                contracted = contract(tl.idx, tr.idx)
+
+
+                max_len = max(len(tl.idx), len(tr.idx))
+
+                if len(contracted) > max_len:
+                    # Expansion is Punished - At this point we can abandon this permutation
+                    x = np.inf
+                    return x
+                elif len(contracted) == max_len:
+                    # Punished by length
+                    # So if we have the option to reduce it it should happen sooner rather than later
+                    x += len(contracted)            
+                elif len(contracted) <= max_len:
+                    # Rewarded by gain
+                    x += len(contracted) - max_len  
+
+                # print(f"{i=}: {contracted} | {x=}")
+
+                tl.idx = contracted
+
+            return x
+
+        scores = []
+        for p in permutations:
+
+            scores.append(get_storage_need(p))
+
+        # print(scores)
+        # print(permutations)
+
+        i = np.argmin(scores)
+
+        # print(f"Best Permutation: {permutations[i]}")
+
+        self.factors = permute(self.factors, permutations[i])
 
         return
 
@@ -169,28 +231,33 @@ class Parser:
 
         for n in self.weights:
             self.output.append(
-                f'{t.name} = mea.contract({t.idx},{n.idx}->{t.idx}, {t.name}, {n.name})'
+                f'{t.name} = mea.contract(\"{t.idx},{n.idx}->{t.idx}\", {t.name}, {n.name})'
             )
 
         self.output.append(f'')
 
 if __name__ == "__main__":
 
+    WRITE_TO_FILE = True
+
     with open("showcase.txt", "w") as file:
 
-        for n in range(86,91):
+        if not WRITE_TO_FILE:
+            file = None
 
-            line = get_line(n)
 
-            file.write(f"Read Line:\n\t{line.strip()}")
+        line = get_line(229)
+        line = r"""(*Kac)["ac"] += ( 1.0) * (*Tph)["ak"] * (*Tph)["dl"] * (*Vhhpp)["kldc"]"""
+        
+        print(f"Read Line:\n\t{line.strip()}", file=file)
 
-            tokens = get_tokens(line)
+        tokens = get_tokens(line)
 
-            parser = Parser(tokens)
-            parser.parse_tokens()
+        parser = Parser(tokens)
+        parser.parse_tokens()
 
-            file.write("\n\nTranslated Code:\n")
-            for line in parser.output:
-                file.write("\t" + line + "\n")
+        print("\n\nTranslated Code:", file=file)
+        for line in parser.output:
+            print("\t" + line, file=file)
 
-            file.write("\n")
+        print("\n", file=file)
